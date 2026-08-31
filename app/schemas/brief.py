@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from app.schemas import CamelModel
 
-class CaseBrief(BaseModel):
+class CaseBrief(CamelModel):
     case_name: str
     holding: str
     reasoning: str
