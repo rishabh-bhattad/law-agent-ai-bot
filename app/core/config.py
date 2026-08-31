@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     COURTLISTENER_API_KEY: str
     
     # CourtListener API Base URL
-    COURTLISTENER_BASE_URL: str = "https://www.courtlistener.com/api/rest/v3"
+    COURTLISTENER_BASE_URL: str = "https://www.courtlistener.com/api/rest/v4"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

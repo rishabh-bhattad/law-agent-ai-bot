@@ -6,7 +6,8 @@ class CourtListenerClient:
     def __init__(self):
         self.url = settings.COURTLISTENER_BASE_URL
         self.headers = {
-            "Authorization": f"Token {settings.COURTLISTENER_API_KEY}"
+            "Authorization": f"Token {settings.COURTLISTENER_API_KEY}",
+            "Accept": "application/json"
         }
 
     async def search_opinions(self, query: str):
