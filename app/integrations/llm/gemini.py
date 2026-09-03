@@ -6,16 +6,16 @@ from typing import Type
 # Import retry tools
 from tenacity import retry, wait_exponential, stop_after_attempt
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.integrations.llm import LLMProvider, T
 
 class GeminiLLMProvider(LLMProvider):
     def __init__(self):
         self.client = genai.Client(
-            api_key=settings.GEMINI_API_KEY
+            api_key=get_settings().GEMINI_API_KEY
         )
         self.model_name = "gemini-2.5-flash"
-        
+
 
     @retry(
             wait=wait_exponential(multiplier=1, min=2, max=10),
