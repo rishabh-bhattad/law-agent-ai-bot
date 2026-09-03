@@ -1,7 +1,7 @@
 from app.integrations.courtlistener import CourtListenerClient
 from app.integrations.llm import LLMProvider
 from app.schemas.brief import CaseBrief
-from app.prompts import get_prompt_template
+from app.prompts import build_schema_prompt
 
 
 class BriefingService:
@@ -12,8 +12,9 @@ class BriefingService:
 
     async def generate_brief(self, query: str) -> CaseBrief:
         cases = str(await self.court.search_opinions(query=query))
-        prompt = get_prompt_template("briefing.md")
-        formatted_prompt = prompt.format(
+        formatted_prompt = build_schema_prompt(
+            template_name="briefing.md",
+            schema=CaseBrief,
             case_text=cases
         )
         response = await self.llm.complete_with_json_schema(formatted_prompt, schema=CaseBrief)

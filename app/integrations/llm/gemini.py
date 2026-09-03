@@ -7,7 +7,7 @@ from typing import Type
 from tenacity import retry, wait_exponential, stop_after_attempt
 
 from app.core.config import settings
-from app.integrations.llm.base import LLMProvider, T
+from app.integrations.llm import LLMProvider, T
 
 class GeminiLLMProvider(LLMProvider):
     def __init__(self):
