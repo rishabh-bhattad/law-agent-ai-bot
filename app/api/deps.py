@@ -1,5 +1,6 @@
 from fastapi import Depends
 
+from app.core.config import Settings, get_settings
 from app.integrations.llm import llm_provider, LLMProvider
 from app.integrations.courtlistener import CourtListenerClient
 from app.services.briefing import BriefingService
@@ -10,9 +11,9 @@ def get_courtlistener() -> CourtListenerClient:
     return CourtListenerClient()
 
 
-def get_llm() -> LLMProvider:
+def get_llm(settingss: Settings = Depends(get_settings)) -> LLMProvider:
     """Dependency that uses our factory to return the correct LLM."""
-    return llm_provider()
+    return llm_provider(settingss)
 
 
 def get_briefing_service(

@@ -16,8 +16,8 @@ class LLMProvider(Protocol):
         """
         ...
 
-def llm_provider() -> LLMProvider:
-    llm = Settings.LLM_PROVIDER
+def llm_provider(settings: Settings) -> LLMProvider:
+    llm = settings.LLM_PROVIDER
     if llm == 'gemini':
         from app.integrations.llm.gemini import GeminiLLMProvider
         return GeminiLLMProvider()
