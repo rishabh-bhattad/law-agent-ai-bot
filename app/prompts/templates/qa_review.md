@@ -10,10 +10,10 @@ Your job is to review their draft against the original text, correct any halluci
 5. Output the finalized response exactly matching the provided JSON schema.
 
 ### Raw Case Text:
-{raw_text}
+{raw_cases}
 
 ### Draft Brief:
 {draft_brief}
 
-### Required JSON Schema:
+### Required JSON Schema: You MUST format your output to exactly match this JSON schema:
 {schema}

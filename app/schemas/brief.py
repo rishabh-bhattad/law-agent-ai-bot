@@ -8,3 +8,9 @@ class CaseBrief(CamelModel):
     citation: list[str] = Field(
         description="A list of full case names, docket numbers, or URLs referenced in the text for further reading."
     )
+
+
+class LegalAnalysis(CamelModel):
+    primary_issue: str
+    material_facts: list[str]
+    court_reasoning: str

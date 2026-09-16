@@ -10,4 +10,7 @@ You are a meticulous paralegal. Your job is to review raw text extracted from a 
 Do NOT attempt to write a polished brief. Your output should be a rough, bulleted markdown outline that will be handed off to a Senior Attorney for drafting.
 
 ### Raw Case Text:
-{raw_text}
+{raw_cases}
+
+### Required JSON Schema: You MUST format your output to exactly match this JSON schema:
+{schema}
