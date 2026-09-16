@@ -1,18 +1,24 @@
 import json
-from pathlib import Path
+from importlib import resources
 from typing import Type
 from app.schemas import CamelModel
 
-TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 def get_prompt_template(template_name: str) -> str:
     """
     Reads a markdown file from the templates directory.
     Usage: get_prompt_template("briefing.md")
     """
-    full_path = Path(TEMPLATES_DIR) / template_name
-    return full_path.read_text(encoding="utf-8")
+    return resources.files("app.prompts.templates").joinpath(template_name).read_text(encoding="utf-8")
 
+def get_global_rules() -> str:
+    rules_dir = resources.files("app.prompts.rules")
+    rules = ""
+    for item in rules_dir.iterdir():
+        if item.name.endswith(".md"):
+            rules = rules + "\n" + item.read_text(encoding="utf-8")
+
+    return rules
 
 def build_schema_prompt(template_name: str, schema: Type[CamelModel], **kwargs) -> str:
     """
@@ -20,5 +26,6 @@ def build_schema_prompt(template_name: str, schema: Type[CamelModel], **kwargs) 
     and injects it along with any other variables.
     """
     formatted_schema = json.dumps(schema.model_json_schema(), indent=2)
-    return get_prompt_template(template_name=template_name).format(schema=formatted_schema, **kwargs)
+    rules = get_global_rules()
+    return get_prompt_template(template_name=template_name).format(schema=formatted_schema, **kwargs) + "\n\n" + rules
 
