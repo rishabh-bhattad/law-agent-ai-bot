@@ -1,6 +1,10 @@
 from app.schemas import CamelModel
 from pydantic import Field
 
+class GenerateBriefRequest(CamelModel):
+    query: str
+    
+
 class CaseBrief(CamelModel):
     case_name: str
     holding: str

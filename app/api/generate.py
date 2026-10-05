@@ -1,19 +1,16 @@
 from fastapi import APIRouter, Depends
 from app.schemas import CamelModel
 
-from app.api.deps import get_briefing_service
-from app.services.briefing import BriefingService
+from app.api.deps import get_briefing_pipeline
+from app.workflow.pipeline import BriefingPipeline
 from app.schemas.brief import CaseBrief
+from app.schemas.brief import GenerateBriefRequest
 
 router = APIRouter()
-
-class GenerateBriefRequest(CamelModel):
-    query: str
-
 
 @router.post("/generate", response_model=CaseBrief)
 async def generate_brief_endpoint(
     request: GenerateBriefRequest,
-    service: BriefingService = Depends(get_briefing_service)
+    pipeline: BriefingPipeline = Depends(get_briefing_pipeline)
 ) -> CaseBrief:
-    return await service.generate_brief(request.query)
+    return await pipeline.execute(request.query)

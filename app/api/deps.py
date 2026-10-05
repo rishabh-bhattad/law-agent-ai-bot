@@ -1,9 +1,11 @@
 from fastapi import Depends
 
+from functools import lru_cache
+
 from app.core.config import Settings, get_settings
 from app.integrations.llm import llm_provider, LLMProvider
 from app.integrations.courtlistener import CourtListenerClient
-from app.services.briefing import BriefingService
+from app.workflow.pipeline import BriefingPipeline
 
 
 def get_courtlistener() -> CourtListenerClient:
@@ -11,15 +13,16 @@ def get_courtlistener() -> CourtListenerClient:
     return CourtListenerClient()
 
 
-def get_llm(settingss: Settings = Depends(get_settings)) -> LLMProvider:
+@lru_cache
+def get_llm() -> LLMProvider:
     """Dependency that uses our factory to return the correct LLM."""
-    return llm_provider(settingss)
+    return llm_provider(get_settings())
 
 
-def get_briefing_service(
+def get_briefing_pipeline(
         court: CourtListenerClient = Depends(get_courtlistener),
         llm: LLMProvider = Depends(get_llm)
-) -> BriefingService:
+) -> BriefingPipeline:
     """Dependency that returns a fully constructed BriefingService."""
-    return BriefingService(llm_client=llm, court_client=court)
+    return BriefingPipeline(llm_client=llm, court_client=court)
 
