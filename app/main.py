@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.api.generate import router as generate_router
+from app.core.telemetry import setup_telemetry
 
 settings = get_settings()
 
@@ -11,6 +12,8 @@ app = FastAPI(
     description="Live case-law search and automated brief-generation API",
     version="0.1.0",
 )
+
+setup_telemetry(app=app)
 
 app.add_middleware(
     CORSMiddleware,
