@@ -9,6 +9,7 @@ _INJECTION_PATTERNS = [
 
 
 def check_for_injection(text: str) -> None:
+    """Checks for prompt injection patterns and raises ValueError if detected."""
     for pattern in _INJECTION_PATTERNS:
         if pattern.search(text):
             raise ValueError("400 Bad Request: The provided prompt violates security policies.")

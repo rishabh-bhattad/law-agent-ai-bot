@@ -5,7 +5,8 @@ from tests.mocks import FakeLLMProvider, FakeCourtListenerClient
 
 
 @pytest.mark.asyncio
-async def test_briefing_pipeline_success():
+async def test_briefing_pipeline_success() -> None:
+    """Verifies that the briefing pipeline completes and returns a valid CaseBrief."""
     fake_llm = FakeLLMProvider()
     fake_court = FakeCourtListenerClient()
     pipeline = BriefingPipeline(llm_client=fake_llm, court_client=fake_court)
@@ -20,7 +21,8 @@ async def test_briefing_pipeline_success():
 
 
 @pytest.mark.asyncio
-async def test_briefing_pipeline_injection_blocked():
+async def test_briefing_pipeline_injection_blocked() -> None:
+    """Verifies that prompt injection triggers a ValueError."""
     fake_llm = FakeLLMProvider()
     fake_court = FakeCourtListenerClient()
     pipeline = BriefingPipeline(llm_client=fake_llm, court_client=fake_court)

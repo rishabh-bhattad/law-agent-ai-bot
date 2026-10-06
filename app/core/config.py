@@ -3,6 +3,7 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    """Application configuration loaded from environment variables."""
     PROJECT_NAME: str = "Live Case-Law Briefing Bot"
     DEBUG: bool = False
 

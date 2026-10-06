@@ -17,6 +17,7 @@ class LLMProvider(Protocol):
         ...
 
 def llm_provider(settings: Settings) -> LLMProvider:
+    """Factory returning the configured LLM provider instance."""
     llm = settings.LLM_PROVIDER
     if llm == 'gemini':
         from app.integrations.llm.gemini import GeminiLLMProvider

@@ -8,12 +8,15 @@ from app.schemas.brief import CaseBrief
 
 
 class BriefingPipeline:
-    def __init__(self, llm_client: LLMProvider, court_client: CourtListenerClient):
+    """Orchestrates the briefing workflow from query input to final brief output."""
+
+    def __init__(self, llm_client: LLMProvider, court_client: CourtListenerClient) -> None:
         self.llm = llm_client
         self.court = court_client
 
 
     async def execute(self, query: str) -> CaseBrief:
+        """Runs security checks and executes the briefing workflow steps."""
         check_for_injection(query)
 
         briefing_steps = get_briefing_workflow(llm=self.llm, court=self.court)

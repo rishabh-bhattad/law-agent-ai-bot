@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
 class CamelModel(BaseModel):
+    """Base Pydantic model with automatic camelCase alias conversion."""
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True # This allows to use snake case in the backend still

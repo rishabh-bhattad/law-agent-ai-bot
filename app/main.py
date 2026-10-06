@@ -26,12 +26,14 @@ app.add_middleware(
 app.include_router(generate_router, prefix="/api/v1")
 
 @app.get("/")
-async def root():
+async def root() -> dict:
+    """Root endpoint returning service status."""
     return {
         "message": f"Welcome to the {settings.PROJECT_NAME} API",
         "status": "online"
     }
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict:
+    """Health check endpoint for service monitoring."""
     return {"status": "healthy"}

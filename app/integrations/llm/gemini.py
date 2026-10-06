@@ -10,7 +10,9 @@ from app.core.config import get_settings
 from app.integrations.llm import LLMProvider, T
 
 class GeminiLLMProvider(LLMProvider):
-    def __init__(self):
+    """Google Gemini integration conforming to LLMProvider."""
+
+    def __init__(self) -> None:
         self.client = genai.Client(
             api_key=get_settings().GEMINI_API_KEY
         )
@@ -22,6 +24,7 @@ class GeminiLLMProvider(LLMProvider):
             stop=stop_after_attempt(5)
     )
     async def complete_with_json_schema(self, prompt: str, schema: Type[T]) -> T:
+        """Generates structured content matching the provided Pydantic schema."""
         response = await self.client.aio.models.generate_content(
             model=self.model_name,
             contents=prompt,

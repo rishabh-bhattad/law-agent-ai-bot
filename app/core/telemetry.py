@@ -6,7 +6,8 @@ from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
 from fastapi import FastAPI
 
-def setup_telemetry(app: FastAPI):
+def setup_telemetry(app: FastAPI) -> None:
+    """Configures OpenTelemetry tracing for FastAPI and outbound HTTP calls."""
     tracer = TracerProvider()
     trace.set_tracer_provider(tracer_provider=tracer)
     cse = ConsoleSpanExporter()
