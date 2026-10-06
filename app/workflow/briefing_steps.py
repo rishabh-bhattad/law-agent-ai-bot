@@ -13,10 +13,11 @@ class SearchCourtListenerStep(WorkflowStep):
 
     async def execute(self, context: WorkflowContext) -> None:
         query = context.request
-        cases = await self.client.search_opinions(query=query)
+        data = await self.client.search_opinions(query=query)
+        cases = data.get("results", []) if isinstance(data, dict) else data
         formatted_str = ""
         for case in cases:
-            formatted_str += str(case)
+            formatted_str += str(case) + "\n\n"
         context.scratch['raw_cases'] = formatted_str
 
 

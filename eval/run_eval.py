@@ -17,12 +17,12 @@ class EvalScorecard(BaseModel):
 
 BENCHMARKS = [
     {
-        "query": "Roe v. Wade abortion constitutional privacy right",
+        "query": "Roe v. Wade",
         "expected_holding": "The Constitution of the United States protected the liberty of a pregnant woman to choose to have an abortion under the Due Process Clause of the Fourteenth Amendment.",
         "expected_case_name": "Roe v. Wade"
     },
     {
-        "query": "Miranda v. Arizona self incrimination right to counsel",
+        "query": "Miranda v. Arizona",
         "expected_holding": "Prior to custodial interrogation, suspects must be informed of their constitutional right to remain silent and right to consult with an attorney.",
         "expected_case_name": "Miranda v. Arizona"
     }
