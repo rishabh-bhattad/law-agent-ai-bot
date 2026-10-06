@@ -1,0 +1,14 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.env
+.DS_Store
+frontend
+docs
+eval
+tests
+*.md
+!requirements.txt
+.vscode

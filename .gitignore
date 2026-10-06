@@ -220,3 +220,8 @@ __marimo__/
 GEMINI.md
 /docs/blueprint
 .DS_Store
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+static/
