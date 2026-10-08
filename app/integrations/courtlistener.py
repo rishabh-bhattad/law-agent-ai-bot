@@ -17,15 +17,21 @@ class CourtListenerClient:
             wait=wait_exponential(multiplier=1, min=2, max=10),
             stop=stop_after_attempt(3)
     )
-    async def search_opinions(self, query: str) -> dict:
+    async def search_opinions(self, query: str, court: str | None = None) -> dict:
         """Searches opinions matching the query with automatic retries."""
+        params = {
+            "q": query,
+            "type": "o",
+            "order_by": "score desc"
+        }
+        if court:
+            params["court"] = court
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(
                 url=f"{self.url}/search/",
                 headers=self.headers,
-                params={
-                    "q": query
-                }
+                params=params
             )
             response.raise_for_status()
 

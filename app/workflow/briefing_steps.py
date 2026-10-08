@@ -2,7 +2,28 @@ from app.workflow.context import WorkflowContext, WorkflowStep
 from app.integrations.courtlistener import CourtListenerClient
 from app.integrations.llm import LLMProvider
 from app.prompts import build_schema_prompt
-from app.schemas.brief import LegalAnalysis, CaseBrief
+from app.schemas.brief import LegalAnalysis, CaseBrief, SearchPlan
+
+
+class OptimizeQueryStep(WorkflowStep):
+    """Rewrites user query into targeted search keywords and jurisdiction filters."""
+    name = "Optimizing Search Query."
+
+    def __init__(self, llm: LLMProvider) -> None:
+        self.llm = llm
+
+    async def execute(self, context: WorkflowContext) -> None:
+        user_query = context.request
+        formatted_prompt = build_schema_prompt(
+            "optimize_query.md",
+            schema=SearchPlan,
+            user_query=user_query,
+        )
+        context.scratch['search_plan'] = await self.llm.complete_with_json_schema(
+            prompt=formatted_prompt,
+            schema=SearchPlan,
+        )
+
 
 class SearchCourtListenerStep(WorkflowStep):
     """Searches CourtListener for opinions matching the request."""
@@ -12,8 +33,11 @@ class SearchCourtListenerStep(WorkflowStep):
         self.client = client
 
     async def execute(self, context: WorkflowContext) -> None:
-        query = context.request
-        data = await self.client.search_opinions(query=query)
+        plan: SearchPlan | None = context.scratch.get('search_plan')
+        query = plan.search_query if plan else context.request
+        court = plan.court if plan else None
+
+        data = await self.client.search_opinions(query=query, court=court)
         cases = data.get("results", []) if isinstance(data, dict) else data
         formatted_str = ""
         for case in cases:

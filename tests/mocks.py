@@ -1,13 +1,18 @@
 from typing import Type
 from app.integrations.llm import LLMProvider, T
-from app.schemas.brief import CaseBrief, LegalAnalysis
+from app.schemas.brief import CaseBrief, LegalAnalysis, SearchPlan
 
 
 class FakeLLMProvider(LLMProvider):
     """Mock LLM Provider returning dummy Pydantic model instances."""
 
     async def complete_with_json_schema(self, prompt: str, schema: Type[T]) -> T:
-        if schema == CaseBrief:
+        if schema == SearchPlan:
+            return SearchPlan(
+                search_query="Dummy Search Query",
+                court=None
+            )
+        elif schema == CaseBrief:
             return CaseBrief(
                 case_name="CBDummyCaseName",
                 holding="CBDummyHolding",
@@ -26,5 +31,5 @@ class FakeLLMProvider(LLMProvider):
 class FakeCourtListenerClient:
     """Mock CourtListener client returning simulated search results."""
 
-    async def search_opinions(self, query: str) -> list[str]:
+    async def search_opinions(self, query: str, court: str | None = None) -> list[str]:
         return ["DummyOpinion"]
