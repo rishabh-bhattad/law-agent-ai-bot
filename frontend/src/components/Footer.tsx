@@ -24,6 +24,9 @@ export default function Footer() {
           .{' '}
           <span className="text-slate-400">Not legal advice.</span>
         </p>
+        <p className="text-xs text-slate-500 mt-2 font-medium">
+          Built with <span className="text-red-500">❤️</span> by Rish
+        </p>
       </div>
     </footer>
   );
