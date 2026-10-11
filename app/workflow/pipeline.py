@@ -5,6 +5,7 @@ from app.workflow.context import WorkflowContext
 from app.workflow.runner import WorkflowRunner
 from app.workflow.registry import get_briefing_workflow
 from app.schemas.brief import CaseBrief
+from collections.abc import AsyncGenerator
 
 
 class BriefingPipeline:
@@ -24,4 +25,14 @@ class BriefingPipeline:
         runner = WorkflowRunner(briefing_steps)
         await runner.run(context=context)
         return context.scratch['_final_output']
+
+    async def stream(self, query: str) -> AsyncGenerator[str, None]:
+        """Runs security checks and streams SSE events for each workflow step"""
+        check_for_injection(query)
+
+        briefing_steps = get_briefing_workflow(llm=self.llm, court=self.court)
+        ctx = WorkflowContext(request=query)
+        runner = WorkflowRunner(steps=briefing_steps)
+        async for event in runner.run_stream(context=ctx):
+            yield event
         

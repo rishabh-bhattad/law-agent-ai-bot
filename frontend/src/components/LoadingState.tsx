@@ -1,31 +1,22 @@
-import { useEffect, useState } from 'react';
-
 const PIPELINE_STEPS = [
-  { label: 'Searching court opinions', icon: '🔍', durationMs: 8_000 },
-  { label: 'Analyzing legal issues', icon: '📋', durationMs: 12_000 },
-  { label: 'Drafting case brief', icon: '✍️', durationMs: 12_000 },
-  { label: 'Reviewing & verifying citations', icon: '✅', durationMs: 10_000 },
+  { key: 'Optimizing Search Query.', label: 'Optimizing search query', icon: '⚡' },
+  { key: 'Searching CourtListener Database.', label: 'Searching CourtListener opinions', icon: '🔍' },
+  { key: 'Analyzing Legal Issues.', label: 'Analyzing legal issues & facts', icon: '📋' },
+  { key: 'Drafting Briefing for the query.', label: 'Drafting structured case brief', icon: '✍️' },
+  { key: 'Running Quality Analysis', label: 'Auditing citations & finalizing', icon: '✅' },
 ];
 
 interface LoadingStateProps {
   query: string;
+  currentStepName?: string;
 }
 
-export default function LoadingState({ query }: LoadingStateProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-
-  useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let elapsed = 0;
-
-    for (let i = 1; i < PIPELINE_STEPS.length; i++) {
-      elapsed += PIPELINE_STEPS[i - 1].durationMs;
-      const step = i;
-      timers.push(setTimeout(() => setCurrentStep(step), elapsed));
-    }
-
-    return () => timers.forEach(clearTimeout);
-  }, []);
+export default function LoadingState({ query, currentStepName }: LoadingStateProps) {
+  // Determine active step index based on backend step name (defaults to 0)
+  const activeIndex = PIPELINE_STEPS.findIndex(
+    (step) => step.key === currentStepName || currentStepName?.includes(step.label)
+  );
+  const currentStep = activeIndex >= 0 ? activeIndex : 0;
 
   return (
     <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-16">

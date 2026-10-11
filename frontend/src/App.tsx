@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { CaseBrief, AppState } from './types';
-import { generateBrief } from './api/client';
+import { generateBriefStream } from './api/client';
 import Header from './components/Header';
 import SearchForm from './components/SearchForm';
 import BriefResult from './components/BriefResult';
@@ -12,23 +12,29 @@ function App() {
   const [brief, setBrief] = useState<CaseBrief | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [currentStepName, setCurrentStepName] = useState<string>('');
 
   const handleSubmit = useCallback(async (searchQuery: string) => {
     setState('loading');
     setError(null);
     setBrief(null);
     setQuery(searchQuery);
+    setCurrentStepName('Optimizing Search Query.');
 
-    try {
-      const result = await generateBrief({ query: searchQuery });
-      setBrief(result);
-      setState('success');
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'An unexpected error occurred';
-      setError(message);
-      setState('error');
-    }
+    await generateBriefStream(
+      { query: searchQuery },
+      (stepName) => {
+        setCurrentStepName(stepName);
+      },
+      (completedBrief) => {
+        setBrief(completedBrief);
+        setState('success');
+      },
+      (errorMessage) => {
+        setError(errorMessage);
+        setState('error');
+      }
+    );
   }, []);
 
   const handleNewSearch = useCallback(() => {
@@ -36,6 +42,7 @@ function App() {
     setBrief(null);
     setError(null);
     setQuery('');
+    setCurrentStepName('');
   }, []);
 
   return (
@@ -45,7 +52,9 @@ function App() {
       <main className="flex-1 flex flex-col">
         {state === 'idle' && <SearchForm onSubmit={handleSubmit} />}
 
-        {state === 'loading' && <LoadingState query={query} />}
+        {state === 'loading' && (
+          <LoadingState query={query} currentStepName={currentStepName} />
+        )}
 
         {state === 'success' && brief && (
           <BriefResult

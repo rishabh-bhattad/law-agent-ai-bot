@@ -172,11 +172,4 @@ python -m eval.run_eval
 
 ---
 
-## 📖 Architecture & Design Notes
-
-For an in-depth architectural breakdown of Dependency Injection, the State Machine lifecycle, connection pooling, and the 17 core engineering concepts applied in this codebase, see:
-👉 **[`docs/architecture_walkthrough.md`](docs/architecture_walkthrough.md)**
-
----
-
 Built with ❤️ by Rish
