@@ -12,12 +12,14 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
   3. **Issue Extraction:** Unpacks primary constitutional questions, material facts, and court reasoning into a structured `LegalAnalysis` schema.
   4. **Brief Drafting:** Synthesizes an authoritative legal brief with explicit constitutional amendments, clauses, and holding rules.
   5. **QA & Anti-Hallucination Review:** Audits the draft brief against raw court text, eliminates hallucinated facts, and verifies citations.
+- **Real-Time SSE Streaming:** Asynchronous Server-Sent Events (`POST /api/v1/generate/stream`) stream live pipeline execution states (`step_start`, `step_complete`) directly to the frontend as each stage runs.
+- **Multi-Format Export:** Instant one-click Markdown (`.md`) export, clipboard copying, and print-ready styling for saving structured briefs directly as PDF via the browser.
 - **Enterprise Resiliency:** External API calls to CourtListener and Google Gemini are protected by `tenacity` exponential backoff retries.
 - **Security Guardrails:** Pre-LLM regex detection blocks prompt injection attacks (`400 Bad Request`) before invoking any model.
 - **OpenTelemetry Observability:** Distributed tracing auto-instruments incoming FastAPI requests and outbound HTTP calls.
 - **Docker Containerization:** Full multi-container orchestration (`docker-compose.yml`) packaging the Python 3.12 backend and Nginx-served React frontend for consistent local dev and cloud deployment.
 - **Automated LLM-as-a-Judge Evaluation:** Automated benchmark suite (`eval/run_eval.py`) scores output on *Factual Accuracy* (5.0/5.0), *Holding Correctness* (5.0/5.0), and *Citation Relevance* (4.5/5.0).
-- **Modern Web Interface:** Full React + Vite + Tailwind CSS frontend with live query status and detailed brief cards.
+- **Modern Web Interface:** Full React + Vite + Tailwind CSS frontend with dynamic step progress indicators and detailed brief cards.
 
 ---
 
@@ -28,7 +30,7 @@ law-agent-ai-bot/
 ├── app/                         # FastAPI backend application
 │   ├── api/                     # REST API routers & dependency injection
 │   │   ├── deps.py              # Injected service providers (CourtListener, LLM, Pipeline)
-│   │   └── generate.py          # POST /api/v1/generate endpoint
+│   │   └── generate.py          # REST endpoints (synchronous JSON & SSE streaming)
 │   ├── core/                    # Core infrastructure & configuration
 │   │   ├── config.py            # Pydantic Settings loaded from .env
 │   │   ├── guardrails.py        # Regex prompt-injection scanner
@@ -56,8 +58,6 @@ law-agent-ai-bot/
 ├── tests/                       # Automated test suite
 │   ├── mocks.py                 # Fake LLM and CourtListener client test doubles
 │   └── test_workflow.py         # Pytest async pipeline and guardrail unit tests
-├── docs/                        # Architecture guides and Progressive Build blueprints
-│   └── architecture_walkthrough.md # Deep-dive into DI, state machines & 17 core concepts
 ├── Dockerfile                   # Backend Python 3.12 slim container
 ├── docker-compose.yml           # Multi-container orchestration (Backend + Frontend)
 └── requirements.txt             # Python production dependencies
