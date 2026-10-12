@@ -2,6 +2,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 from typing import Type
+from collections.abc import Callable
 
 # Import retry tools
 from tenacity import retry, wait_exponential, stop_after_attempt
@@ -23,7 +24,12 @@ class GeminiLLMProvider(LLMProvider):
             wait=wait_exponential(multiplier=1, min=2, max=10),
             stop=stop_after_attempt(5)
     )
-    async def complete_with_json_schema(self, prompt: str, schema: Type[T]) -> T:
+    async def complete_with_json_schema(
+        self,
+        prompt: str,
+        schema: Type[T],
+        on_token_usage: Callable[[int], None] | None = None
+    ) -> T:
         """Generates structured content matching the provided Pydantic schema."""
         response = await self.client.aio.models.generate_content(
             model=self.model_name,
@@ -33,5 +39,8 @@ class GeminiLLMProvider(LLMProvider):
                 response_schema=schema
             )
         )
+
+        if on_token_usage and response.usage_metadata:
+            on_token_usage(response.usage_metadata.total_token_count)
 
         return response.parsed

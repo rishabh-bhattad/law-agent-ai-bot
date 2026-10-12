@@ -1,6 +1,7 @@
 from app.core.config import Settings
 from typing import Protocol, TypeVar, Type
 from pydantic import BaseModel
+from collections.abc import Callable
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -8,7 +9,8 @@ class LLMProvider(Protocol):
     async def complete_with_json_schema(
             self,
             prompt: str,
-            schema: Type[T]
+            schema: Type[T],
+            on_token_usage: Callable[[int], None] | None = None
     ) -> T:
         """
         Takes a prompt string and a Pydantic schema class.
