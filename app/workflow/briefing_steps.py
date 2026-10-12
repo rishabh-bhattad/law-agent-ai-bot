@@ -22,6 +22,7 @@ class OptimizeQueryStep(WorkflowStep):
         context.scratch['search_plan'] = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
             schema=SearchPlan,
+            on_token_usage=context.budget.record_tokens
         )
 
 
@@ -57,7 +58,9 @@ class AnalyzeLegalIssuesStep(WorkflowStep):
         formatted_prompt = build_schema_prompt("analyze.md", schema=LegalAnalysis, raw_cases=raw_cases)
         context.scratch['outline'] = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
-            schema=LegalAnalysis)
+            schema=LegalAnalysis,
+            on_token_usage=context.budget.record_tokens
+        )
 
 
 class DraftBriefStep(WorkflowStep):
@@ -70,7 +73,11 @@ class DraftBriefStep(WorkflowStep):
     async def execute(self, context: WorkflowContext) -> None:
         outline = context.scratch['outline']
         formatted_prompt = build_schema_prompt("briefing.md", schema=CaseBrief, case_text=outline)
-        context.scratch['draft_brief'] = await self.llm.complete_with_json_schema(prompt=formatted_prompt, schema=CaseBrief)
+        context.scratch['draft_brief'] = await self.llm.complete_with_json_schema(
+            prompt=formatted_prompt,
+            schema=CaseBrief,
+            on_token_usage=context.budget.record_tokens
+        )
 
 
 class QAReviewStep(WorkflowStep):
@@ -84,4 +91,8 @@ class QAReviewStep(WorkflowStep):
         draft_brief = context.scratch['draft_brief']
         raw_cases = context.scratch['raw_cases']
         formatted_prompt = build_schema_prompt("qa_review.md", schema=CaseBrief, draft_brief=draft_brief, raw_cases=raw_cases)
-        context.scratch['_final_output'] = await self.llm.complete_with_json_schema(prompt=formatted_prompt, schema=CaseBrief)
+        context.scratch['_final_output'] = await self.llm.complete_with_json_schema(
+            prompt=formatted_prompt,
+            schema=CaseBrief,
+            on_token_usage=context.budget.record_tokens
+        )
