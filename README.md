@@ -14,6 +14,7 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
   5. **QA & Anti-Hallucination Review:** Audits the draft brief against raw court text, eliminates hallucinated facts, and verifies citations.
 - **Real-Time SSE Streaming:** Asynchronous Server-Sent Events (`POST /api/v1/generate/stream`) stream live pipeline execution states (`step_start`, `step_complete`) directly to the frontend as each stage runs.
 - **Multi-Format Export:** Instant one-click Markdown (`.md`) export, clipboard copying, and print-ready styling for saving structured briefs directly as PDF via the browser.
+- **Resource Budgets & Runaway Termination:** Enforces hard execution ceilings on step counts (`max_steps=10`), wall-clock timeouts via `asyncio.timeout(120s)`, and cumulative token tracking across pipeline stages via decoupled observer callbacks to prevent runaway loops and cost blowouts.
 - **Enterprise Resiliency:** External API calls to CourtListener and Google Gemini are protected by `tenacity` exponential backoff retries.
 - **Security Guardrails:** Pre-LLM regex detection blocks prompt injection attacks (`400 Bad Request`) before invoking any model.
 - **OpenTelemetry Observability:** Distributed tracing auto-instruments incoming FastAPI requests and outbound HTTP calls.
