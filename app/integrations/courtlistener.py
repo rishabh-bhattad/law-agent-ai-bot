@@ -27,7 +27,7 @@ class CourtListenerClient:
         if court:
             params["court"] = court
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.get(
                 url=f"{self.url}/search/",
                 headers=self.headers,

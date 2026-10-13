@@ -11,7 +11,10 @@ def build_courtlistner_url(citation: str) -> str:
     citation = citation.strip()
     if citation.startswith(('https', 'http')):
         return citation
-    return f"https://www.courtlistener.com/c/{quote(citation)}/"
+    match = re.search(r'(\d+)\s+([A-Za-z0-9\.\s]+?)\s+(\d+)', citation)
+    if match:
+        return f"https://www.courtlistener.com/c/{quote(match.group(2).strip())}/{match.group(1)}/{match.group(3)}/"
+    return f"https://www.courtlistener.com/?q={quote(citation)}&type=o"
 
 
 def extract_citations(text: str) -> list[str]:
@@ -20,7 +23,7 @@ def extract_citations(text: str) -> list[str]:
         from eyecite import get_citations
 
         citations = get_citations(text)
-        return [str(c) for c in citations]
+        return [c.matched_text() for c in citations]
     except ImportError:
         return re.findall(CITATION_INDEX, text)
 
