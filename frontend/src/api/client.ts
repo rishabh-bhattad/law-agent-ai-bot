@@ -67,6 +67,9 @@ export async function generateBriefStream(
               onStep(payload.step);
             } else if (payload.event === 'complete' && payload.result) {
               onComplete(payload.result);
+            } else if (payload.event === 'error' && payload.detail) {
+              onError(payload.detail);
+              return;
             }
           } catch {
             // Ignore partial JSON parse chunks

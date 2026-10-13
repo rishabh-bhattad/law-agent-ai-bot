@@ -3,6 +3,7 @@ from app.integrations.courtlistener import CourtListenerClient
 from app.integrations.llm import LLMProvider
 from app.prompts import build_schema_prompt
 from app.schemas.brief import LegalAnalysis, CaseBrief, SearchPlan
+from app.core.citations import enrich_brief_citations
 
 
 class OptimizeQueryStep(WorkflowStep):
@@ -91,8 +92,9 @@ class QAReviewStep(WorkflowStep):
         draft_brief = context.scratch['draft_brief']
         raw_cases = context.scratch['raw_cases']
         formatted_prompt = build_schema_prompt("qa_review.md", schema=CaseBrief, draft_brief=draft_brief, raw_cases=raw_cases)
-        context.scratch['_final_output'] = await self.llm.complete_with_json_schema(
+        brief = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
             schema=CaseBrief,
             on_token_usage=context.budget.record_tokens
         )
+        context.scratch['_final_output'] = enrich_brief_citations(brief=brief)

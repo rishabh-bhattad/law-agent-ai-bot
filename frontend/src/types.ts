@@ -1,8 +1,14 @@
+export interface CitationItem {
+  citation: string;
+  url?: string;
+}
+
 export interface CaseBrief {
   caseName: string;
   holding: string;
   reasoning: string;
   citation: string[];
+  citationDetails?: CitationItem[];
 }
 
 export interface GenerateBriefRequest {

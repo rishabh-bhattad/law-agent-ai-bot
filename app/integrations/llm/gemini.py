@@ -3,9 +3,10 @@ from google.genai import types
 from pydantic import BaseModel
 from typing import Type
 from collections.abc import Callable
+from app.workflow.context import WorkflowBudgetExceededError
 
 # Import retry tools
-from tenacity import retry, wait_exponential, stop_after_attempt
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_not_exception_type
 
 from app.core.config import get_settings
 from app.integrations.llm import LLMProvider, T
@@ -22,7 +23,8 @@ class GeminiLLMProvider(LLMProvider):
 
     @retry(
             wait=wait_exponential(multiplier=1, min=2, max=10),
-            stop=stop_after_attempt(5)
+            stop=stop_after_attempt(5),
+            retry=retry_if_not_exception_type(WorkflowBudgetExceededError)
     )
     async def complete_with_json_schema(
         self,

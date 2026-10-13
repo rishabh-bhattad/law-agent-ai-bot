@@ -9,7 +9,7 @@ class WorkflowBudgetExceededError(Exception):
 class WorkflowBudget:
     """Tracks resource consumption and enforces hard execution ceilings."""
     max_steps: int = 10
-    max_tokens: int = 50_000
+    max_tokens: int = 150_000
     timeout_seconds: float = 120.0
     steps_executed: int = 0
     tokens_used: int = 0
