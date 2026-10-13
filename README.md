@@ -13,6 +13,7 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
   4. **Brief Drafting:** Synthesizes an authoritative legal brief with explicit constitutional amendments, clauses, and holding rules.
   5. **QA & Anti-Hallucination Review:** Audits the draft brief against raw court text, eliminates hallucinated facts, and verifies citations.
 - **Real-Time SSE Streaming:** Asynchronous Server-Sent Events (`POST /api/v1/generate/stream`) stream live pipeline execution states (`step_start`, `step_complete`) directly to the frontend as each stage runs.
+- **Legal Depth & Citation Hyperlinking:** Free Law Project's `eyecite` parses legal citations (e.g., *384 U.S. 436*), generating direct, clickable hyperlinks to official CourtListener opinion dockets in both the web interface and Markdown exports.
 - **Multi-Format Export:** Instant one-click Markdown (`.md`) export, clipboard copying, and print-ready styling for saving structured briefs directly as PDF via the browser.
 - **Resource Budgets & Runaway Termination:** Enforces hard execution ceilings on step counts (`max_steps=10`), wall-clock timeouts via `asyncio.timeout(120s)`, and cumulative token tracking across pipeline stages via decoupled observer callbacks to prevent runaway loops and cost blowouts.
 - **Enterprise Resiliency:** External API calls to CourtListener and Google Gemini are protected by `tenacity` exponential backoff retries.
@@ -34,6 +35,7 @@ law-agent-ai-bot/
 │   │   └── generate.py          # REST endpoints (synchronous JSON & SSE streaming)
 │   ├── core/                    # Core infrastructure & configuration
 │   │   ├── config.py            # Pydantic Settings loaded from .env
+│   │   ├── citations.py         # Citation parsing & CourtListener URL resolver
 │   │   ├── guardrails.py        # Regex prompt-injection scanner
 │   │   └── telemetry.py         # OpenTelemetry distributed tracing setup
 │   ├── integrations/            # External service integrations
