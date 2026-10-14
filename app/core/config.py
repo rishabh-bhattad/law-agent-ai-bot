@@ -7,8 +7,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Live Case-Law Briefing Bot"
     DEBUG: bool = False
 
-    # LLM Provider
+    # LLM Provider & Tiers
     LLM_PROVIDER: str
+    LLM_MODEL_FAST: str = "gemini-3.5-flash-lite"
+    LLM_MODEL_REASONING: str = "gemini-3.5-flash"
     
     # API Keys
     GEMINI_API_KEY: str

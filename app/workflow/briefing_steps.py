@@ -3,6 +3,7 @@ from app.integrations.courtlistener import CourtListenerClient
 from app.integrations.llm import LLMProvider
 from app.prompts import build_schema_prompt
 from app.schemas.brief import LegalAnalysis, CaseBrief, SearchPlan
+from app.core.config import get_settings
 from app.core.citations import enrich_brief_citations
 
 
@@ -23,6 +24,7 @@ class OptimizeQueryStep(WorkflowStep):
         context.scratch['search_plan'] = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
             schema=SearchPlan,
+            model=get_settings().LLM_MODEL_FAST,
             on_token_usage=context.budget.record_tokens
         )
 
@@ -60,6 +62,7 @@ class AnalyzeLegalIssuesStep(WorkflowStep):
         context.scratch['outline'] = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
             schema=LegalAnalysis,
+            model=get_settings().LLM_MODEL_REASONING,
             on_token_usage=context.budget.record_tokens
         )
 
@@ -77,6 +80,7 @@ class DraftBriefStep(WorkflowStep):
         context.scratch['draft_brief'] = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
             schema=CaseBrief,
+            model=get_settings().LLM_MODEL_REASONING,
             on_token_usage=context.budget.record_tokens
         )
 
@@ -95,6 +99,7 @@ class QAReviewStep(WorkflowStep):
         brief = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
             schema=CaseBrief,
+            model=get_settings().LLM_MODEL_REASONING,
             on_token_usage=context.budget.record_tokens
         )
         context.scratch['_final_output'] = enrich_brief_citations(brief=brief)

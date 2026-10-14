@@ -10,6 +10,7 @@ class LLMProvider(Protocol):
             self,
             prompt: str,
             schema: Type[T],
+            model: str | None = None,
             on_token_usage: Callable[[int], None] | None = None
     ) -> T:
         """
