@@ -14,6 +14,7 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
   5. **QA & Anti-Hallucination Review:** Audits the draft brief against raw court text, eliminates hallucinated facts, and verifies citations.
 - **Real-Time SSE Streaming:** Asynchronous Server-Sent Events (`POST /api/v1/generate/stream`) stream live pipeline execution states (`step_start`, `step_complete`) directly to the frontend as each stage runs.
 - **Legal Depth & Citation Hyperlinking:** Free Law Project's `eyecite` parses legal citations (e.g., *384 U.S. 436*), generating direct, clickable hyperlinks to official CourtListener opinion dockets in both the web interface and Markdown exports.
+- **Granular State Repair (Targeted Section Refinement):** Fast single-field regeneration endpoint (`POST /api/v1/brief/repair`) allows attorneys to refine specific brief sections (Holding or Reasoning) via natural-language instructions using the Fast tier (`gemini-3.5-flash-lite`) and micro-schema JSON outputs without re-running search or re-synthesizing the entire document.
 - **Tiered Model Routing:** Dynamic per-step model dispatch separating low-latency keyword tasks (Fast Tier: `gemini-3.5-flash-lite`) from multi-page statutory analysis and QA hallucination audits (Reasoning Tier: `gemini-3.5-flash`) for optimal cost and performance.
 - **Multi-Format Export:** Instant one-click Markdown (`.md`) export, clipboard copying, and print-ready styling for saving structured briefs directly as PDF via the browser.
 - **Resource Budgets & Runaway Termination:** Enforces hard execution ceilings on step counts (`max_steps=10`), wall-clock timeouts via `asyncio.timeout(120s)`, and cumulative token tracking across pipeline stages via decoupled observer callbacks to prevent runaway loops and cost blowouts.
@@ -33,7 +34,7 @@ law-agent-ai-bot/
 ├── app/                         # FastAPI backend application
 │   ├── api/                     # REST API routers & dependency injection
 │   │   ├── deps.py              # Injected service providers (CourtListener, LLM, Pipeline)
-│   │   └── generate.py          # REST endpoints (synchronous JSON & SSE streaming)
+│   │   └── generate.py          # REST endpoints (JSON generation, SSE streaming, section repair)
 │   ├── core/                    # Core infrastructure & configuration
 │   │   ├── config.py            # Pydantic Settings loaded from .env
 │   │   ├── citations.py         # Citation parsing & CourtListener URL resolver
@@ -44,8 +45,8 @@ law-agent-ai-bot/
 │   │   └── llm/                 # LLM provider protocol & Gemini SDK implementation
 │   ├── prompts/                 # Prompt templates and universal rules
 │   │   ├── rules/               # Global anti-hallucination markdown rules
-│   │   └── templates/           # Step-specific templates (optimize, analyze, draft, qa)
-│   ├── schemas/                 # Pydantic models (CaseBrief, LegalAnalysis, SearchPlan)
+│   │   └── templates/           # Step templates (optimize, analyze, draft, qa, repair_field)
+│   ├── schemas/                 # Pydantic models (CaseBrief, LegalAnalysis, SearchPlan, RepairBriefRequest)
 │   ├── workflow/                # Domain-driven multi-stage workflow engine
 │   │   ├── context.py           # WorkflowContext shared memory container
 │   │   ├── runner.py            # Sequential step execution runner
