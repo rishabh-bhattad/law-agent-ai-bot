@@ -1,4 +1,4 @@
-import type { CaseBrief, GenerateBriefRequest } from '../types';
+import type { CaseBrief, GenerateBriefRequest, RepairBriefRequest } from '../types';
 
 const API_BASE = '/api/v1';
 
@@ -21,6 +21,27 @@ export async function generateBrief(request: GenerateBriefRequest): Promise<Case
 
   return response.json();
 }
+
+export async function repairBrief(request: RepairBriefRequest): Promise<CaseBrief> {
+  const response = await fetch(`${API_BASE}/brief/repair`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    const message =
+      errorData?.detail ||
+      `Repair failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
 
 export async function generateBriefStream(
   request: GenerateBriefRequest,

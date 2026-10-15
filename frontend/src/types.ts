@@ -15,4 +15,11 @@ export interface GenerateBriefRequest {
   query: string;
 }
 
+export interface RepairBriefRequest {
+  currentBrief: CaseBrief;
+  targetField: 'holding' | 'reasoning';
+  instruction: string;
+}
+
 export type AppState = 'idle' | 'loading' | 'success' | 'error';
+

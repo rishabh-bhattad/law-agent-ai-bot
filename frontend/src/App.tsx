@@ -61,6 +61,7 @@ function App() {
             brief={brief}
             query={query}
             onNewSearch={handleNewSearch}
+            onUpdateBrief={setBrief}
           />
         )}
 

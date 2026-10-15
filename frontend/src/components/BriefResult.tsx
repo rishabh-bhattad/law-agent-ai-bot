@@ -1,14 +1,53 @@
 import { useState } from 'react';
 import type { CaseBrief } from '../types';
+import { repairBrief } from '../api/client';
 
 interface BriefResultProps {
   brief: CaseBrief;
   query: string;
   onNewSearch: () => void;
+  onUpdateBrief?: (updatedBrief: CaseBrief) => void;
 }
 
-export default function BriefResult({ brief, query, onNewSearch }: BriefResultProps) {
+export default function BriefResult({ brief, query, onNewSearch, onUpdateBrief }: BriefResultProps) {
   const [copied, setCopied] = useState(false);
+  const [activeField, setActiveField] = useState<'holding' | 'reasoning' | null>(null);
+  const [instruction, setInstruction] = useState('');
+  const [isRefining, setIsRefining] = useState(false);
+  const [refineError, setRefineError] = useState<string | null>(null);
+
+  const handleStartRefine = (field: 'holding' | 'reasoning') => {
+    setActiveField(field);
+    setInstruction('');
+    setRefineError(null);
+  };
+
+  const handleCancelRefine = () => {
+    setActiveField(null);
+    setInstruction('');
+    setRefineError(null);
+  };
+
+  const handleSubmitRefine = async () => {
+    if (!activeField || !instruction.trim()) return;
+    setIsRefining(true);
+    setRefineError(null);
+    try {
+      const updated = await repairBrief({
+        currentBrief: brief,
+        targetField: activeField,
+        instruction: instruction.trim(),
+      });
+      onUpdateBrief?.(updated);
+      setActiveField(null);
+      setInstruction('');
+    } catch (err) {
+      setRefineError(err instanceof Error ? err.message : 'Refinement failed.');
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
 
   const handleCopy = async () => {
     const text = [
@@ -119,27 +158,154 @@ export default function BriefResult({ brief, query, onNewSearch }: BriefResultPr
           <div className="divide-y divide-slate-100">
             {/* Holding */}
             <section className="px-6 sm:px-8 py-6">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-5 bg-indigo-500 rounded-full print:hidden" />
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Holding
-                </h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 bg-indigo-500 rounded-full print:hidden" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Holding
+                  </h3>
+                </div>
+                {activeField !== 'holding' && (
+                  <button
+                    onClick={() => handleStartRefine('holding')}
+                    className="print:hidden text-xs text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1 px-2.5 py-1 rounded-md hover:bg-indigo-50 transition-colors"
+                    title="Refine holding with custom instructions"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                    Refine
+                  </button>
+                )}
               </div>
               <p className="text-slate-800 leading-relaxed">{brief.holding}</p>
+
+              {activeField === 'holding' && (
+                <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 print:hidden">
+                  <label className="block text-xs font-medium text-slate-700">
+                    Refine Holding Instructions
+                  </label>
+                  <input
+                    type="text"
+                    value={instruction}
+                    onChange={(e) => setInstruction(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isRefining) handleSubmitRefine();
+                    }}
+                    placeholder="e.g., Emphasize the Fourteenth Amendment Due Process clause..."
+                    disabled={isRefining}
+                    className="w-full text-sm px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100"
+                    autoFocus
+                  />
+                  {refineError && (
+                    <p className="text-xs text-red-600 font-medium">{refineError}</p>
+                  )}
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={handleCancelRefine}
+                      disabled={isRefining}
+                      className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-md transition-colors font-medium disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitRefine}
+                      disabled={isRefining || !instruction.trim()}
+                      className="px-3.5 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                    >
+                      {isRefining ? (
+                        <>
+                          <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                          </svg>
+                          <span>Refining...</span>
+                        </>
+                      ) : (
+                        <span>Update Holding</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Reasoning */}
             <section className="px-6 sm:px-8 py-6">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-5 bg-amber-500 rounded-full print:hidden" />
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Reasoning
-                </h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 bg-amber-500 rounded-full print:hidden" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Reasoning
+                  </h3>
+                </div>
+                {activeField !== 'reasoning' && (
+                  <button
+                    onClick={() => handleStartRefine('reasoning')}
+                    className="print:hidden text-xs text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1 px-2.5 py-1 rounded-md hover:bg-indigo-50 transition-colors"
+                    title="Refine reasoning with custom instructions"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                    Refine
+                  </button>
+                )}
               </div>
               <p className="text-slate-800 leading-relaxed whitespace-pre-line">
                 {brief.reasoning}
               </p>
+
+              {activeField === 'reasoning' && (
+                <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 print:hidden">
+                  <label className="block text-xs font-medium text-slate-700">
+                    Refine Reasoning Instructions
+                  </label>
+                  <input
+                    type="text"
+                    value={instruction}
+                    onChange={(e) => setInstruction(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isRefining) handleSubmitRefine();
+                    }}
+                    placeholder="e.g., Focus specifically on the strict scrutiny balancing test..."
+                    disabled={isRefining}
+                    className="w-full text-sm px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100"
+                    autoFocus
+                  />
+                  {refineError && (
+                    <p className="text-xs text-red-600 font-medium">{refineError}</p>
+                  )}
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={handleCancelRefine}
+                      disabled={isRefining}
+                      className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-md transition-colors font-medium disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitRefine}
+                      disabled={isRefining || !instruction.trim()}
+                      className="px-3.5 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                    >
+                      {isRefining ? (
+                        <>
+                          <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                          </svg>
+                          <span>Refining...</span>
+                        </>
+                      ) : (
+                        <span>Update Reasoning</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
+
 
             {/* Citations */}
             <section className="px-6 sm:px-8 py-6">
