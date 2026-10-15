@@ -1,3 +1,4 @@
+from typing import Literal
 from app.schemas import CamelModel
 from pydantic import Field
 
@@ -37,3 +38,15 @@ class LegalAnalysis(CamelModel):
     primary_issue: str
     material_facts: list[str]
     court_reasoning: str
+
+
+class SingleFieldRepair(CamelModel):
+    """Micro-schema constraining the LLM to output only the single repaired paragraph."""
+    repaired_text: str
+
+
+class RepairBriefRequest(CamelModel):
+    """Payload for targeted in-place section refinement."""
+    current_brief: CaseBrief
+    target_field: Literal['holding', 'reasoning']
+    instruction: str
