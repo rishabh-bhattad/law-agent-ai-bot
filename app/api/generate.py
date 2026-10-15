@@ -3,8 +3,7 @@ from fastapi.responses import StreamingResponse
 
 from app.api.deps import get_briefing_pipeline
 from app.workflow.pipeline import BriefingPipeline
-from app.schemas.brief import CaseBrief
-from app.schemas.brief import GenerateBriefRequest
+from app.schemas.brief import CaseBrief, GenerateBriefRequest, RepairBriefRequest
 
 router = APIRouter()
 
@@ -28,3 +27,11 @@ async def generate_brief_stream_endpoint(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
     )
+
+@router.post("/brief/repair", response_model=CaseBrief)
+async def repair_brief_endpoint(
+    request: RepairBriefRequest,
+    pipeline: BriefingPipeline = Depends(get_briefing_pipeline)
+) -> CaseBrief:
+    """Refines a specific section of an existing brief without full regeneration."""
+    return await pipeline.repair(request)
