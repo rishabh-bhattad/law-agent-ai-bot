@@ -80,7 +80,7 @@ class DraftBriefStep(WorkflowStep):
         context.scratch['draft_brief'] = await self.llm.complete_with_json_schema(
             prompt=formatted_prompt,
             schema=CaseBrief,
-            model=get_settings().LLM_MODEL_REASONING,
+            model=get_settings().LLM_MODEL_FAST,
             on_token_usage=context.budget.record_tokens
         )
 

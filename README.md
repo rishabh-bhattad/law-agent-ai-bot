@@ -15,14 +15,14 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
 - **Real-Time SSE Streaming:** Asynchronous Server-Sent Events (`POST /api/v1/generate/stream`) stream live pipeline execution states (`step_start`, `step_complete`) directly to the frontend as each stage runs.
 - **Legal Depth & Citation Hyperlinking:** Free Law Project's `eyecite` parses legal citations (e.g., *384 U.S. 436*), generating direct, clickable hyperlinks to official CourtListener opinion dockets in both the web interface and Markdown exports.
 - **Granular State Repair (Targeted Section Refinement):** Fast single-field regeneration endpoint (`POST /api/v1/brief/repair`) allows attorneys to refine specific brief sections (Holding or Reasoning) via natural-language instructions using the Fast tier (`gemini-3.5-flash-lite`) and micro-schema JSON outputs without re-running search or re-synthesizing the entire document.
-- **Tiered Model Routing:** Dynamic per-step model dispatch separating low-latency keyword tasks (Fast Tier: `gemini-3.5-flash-lite`) from multi-page statutory analysis and QA hallucination audits (Reasoning Tier: `gemini-3.5-flash`) for optimal cost and performance.
+- **Tiered Model Routing:** Dynamic per-step model dispatch balancing fast synthesis (Fast Tier: `gemini-3.5-flash-lite` for query optimization, brief drafting, and in-place repairs) against deep reasoning (Reasoning Tier: `gemini-3.5-flash` for raw opinion analysis and QA anti-hallucination audits) for optimal cost, latency, and legal rigor.
 - **Multi-Format Export:** Instant one-click Markdown (`.md`) export, clipboard copying, and print-ready styling for saving structured briefs directly as PDF via the browser.
 - **Resource Budgets & Runaway Termination:** Enforces hard execution ceilings on step counts (`max_steps=10`), wall-clock timeouts via `asyncio.timeout(120s)`, and cumulative token tracking across pipeline stages via decoupled observer callbacks to prevent runaway loops and cost blowouts.
 - **Enterprise Resiliency:** External API calls to CourtListener and Google Gemini are protected by `tenacity` exponential backoff retries.
 - **Security Guardrails:** Pre-LLM regex detection blocks prompt injection attacks (`400 Bad Request`) before invoking any model.
 - **OpenTelemetry Observability:** Distributed tracing auto-instruments incoming FastAPI requests and outbound HTTP calls.
 - **Docker Containerization:** Full multi-container orchestration (`docker-compose.yml`) packaging the Python 3.12 backend and Nginx-served React frontend for consistent local dev and cloud deployment.
-- **Automated LLM-as-a-Judge Evaluation:** Automated benchmark suite (`eval/run_eval.py`) scores output on *Factual Accuracy* (5.0/5.0), *Holding Correctness* (5.0/5.0), and *Citation Relevance* (4.5/5.0).
+- **Automated LLM-as-a-Judge Evaluation:** Automated benchmark suite (`eval/run_eval.py`) scores output on *Factual Accuracy* (5.0/5.0), *Holding Correctness* (5.0/5.0), and *Citation Relevance* (5.0/5.0).
 - **Modern Web Interface:** Full React + Vite + Tailwind CSS frontend with dynamic step progress indicators and detailed brief cards.
 
 ---
@@ -164,7 +164,7 @@ docker compose up --build
 ## 🧪 Testing & Evaluation
 
 ### 1. Run Unit Tests (Fast & Free)
-Runs the test suite using in-memory mock clients (`tests/mocks.py`) to verify the state machine and prompt-injection guardrails without incurring API costs:
+Runs the test suite using in-memory mock clients (`tests/mocks.py`) to verify the state machine, prompt-injection guardrails, SSE streaming, section repair, and budget limits without incurring API costs:
 
 ```bash
 pytest tests/test_workflow.py -v
