@@ -2,7 +2,7 @@ import re
 
 # List of compiled regex patterns to look for.
 _INJECTION_PATTERNS = [
-    re.compile(r"ignore previous instructions", re.IGNORECASE),
+    re.compile(r"(ignore|disregard)\s+(all\s+)?(previous|prior)\s+instructions", re.IGNORECASE),
     re.compile(r"\[system\]", re.IGNORECASE),
     re.compile(r"you are now (a|an)", re.IGNORECASE),
 ]
