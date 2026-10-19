@@ -12,6 +12,7 @@ Your task is to refine and rewrite ONLY the specified target section ({target_fi
 
 ### Attorney's Refinement Instructions:
 {instruction}
+{critique_context}
 
 ### Guidelines:
 1. Revise only the requested section ({target_field}), ensuring it remains factually accurate to the case law.
