@@ -17,7 +17,16 @@ class CitationItem(CamelModel):
     """Structured citation item holding the citation text and docket URL."""
     citation: str
     url: str | None = None
-    
+
+
+class RevisionEntry(CamelModel):
+    """Audit log entry tracking section changes and auditor feedback."""
+    target_field: Literal['holding', 'reasoning']
+    original_text: str
+    revised_text: str
+    critique: str
+    timestamp: str
+
 
 class CaseBrief(CamelModel):
     """Structured case brief output."""
@@ -30,6 +39,9 @@ class CaseBrief(CamelModel):
     citation_details: list[CitationItem] = Field(
         default_factory=list,
         description='Details about the citation item, if any'
+    )
+    revision_history: list[RevisionEntry] = Field(
+        default_factory=list
     )
 
 
@@ -50,3 +62,10 @@ class RepairBriefRequest(CamelModel):
     current_brief: CaseBrief
     target_field: Literal['holding', 'reasoning']
     instruction: str
+
+
+class AuditRepairResult(CamelModel):
+    """Schema for the Legal Auditor Agent's review decision and critique."""
+    approved: bool
+    audited_text: str
+    critique: str
