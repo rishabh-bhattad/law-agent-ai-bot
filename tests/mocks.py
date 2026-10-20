@@ -1,7 +1,13 @@
 from collections.abc import Callable
 from typing import Type
 from app.integrations.llm import LLMProvider, T
-from app.schemas.brief import CaseBrief, LegalAnalysis, SearchPlan, SingleFieldRepair
+from app.schemas.brief import (
+    CaseBrief,
+    LegalAnalysis,
+    SearchPlan,
+    SingleFieldRepair,
+    AuditRepairResult,
+)
 
 
 class FakeLLMProvider(LLMProvider):
@@ -38,6 +44,12 @@ class FakeLLMProvider(LLMProvider):
         elif schema == SingleFieldRepair:
             return SingleFieldRepair(
                 repaired_text="Repaired field text content."
+            )
+        elif schema == AuditRepairResult:
+            return AuditRepairResult(
+                approved=True,
+                audited_text="Repaired field text content.",
+                critique="The draft accurately reflects the legal principles.",
             )
         raise ValueError(f"FakeLLMProvider does not support schema: {schema}")
 

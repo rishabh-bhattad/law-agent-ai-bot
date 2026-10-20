@@ -78,6 +78,10 @@ async def test_briefing_pipeline_repair_success() -> None:
     assert repaired_brief.holding == "Repaired field text content."
     assert repaired_brief.reasoning == "Original reasoning before refinement"
     assert repaired_brief.citation == ["384 U.S. 436"]
+    assert len(repaired_brief.revision_history) == 1
+    assert repaired_brief.revision_history[0].target_field == "holding"
+    assert repaired_brief.revision_history[0].original_text == "Original holding before refinement"
+    assert repaired_brief.revision_history[0].revised_text == "Repaired field text content."
 
 
 @pytest.mark.asyncio
@@ -103,6 +107,54 @@ async def test_briefing_pipeline_repair_injection_blocked() -> None:
 
     with pytest.raises(ValueError, match="violates security policies"):
         await pipeline.repair(request)
+
+
+@pytest.mark.asyncio
+async def test_briefing_pipeline_repair_with_rejection_and_citation() -> None:
+    """Verifies that when auditor rejects round 1, round 2 runs and new citations are enriched."""
+    from app.schemas.brief import AuditRepairResult, SingleFieldRepair, RepairBriefRequest
+
+    class RejectingMockLLM(FakeLLMProvider):
+        def __init__(self):
+            self.draft_count = 0
+
+        async def complete_with_json_schema(self, prompt, schema, model=None, on_token_usage=None):
+            if schema == SingleFieldRepair:
+                self.draft_count += 1
+                if self.draft_count == 1:
+                    return SingleFieldRepair(repaired_text="Draft 1 text without citations.")
+                return SingleFieldRepair(repaired_text="Draft 2 holding under Brown v. Board, 347 U.S. 483.")
+            elif schema == AuditRepairResult:
+                return AuditRepairResult(
+                    approved=False,
+                    audited_text="Needs to cite 347 U.S. 483.",
+                    critique="Must cite Brown v. Board of Education.",
+                )
+            return await super().complete_with_json_schema(prompt, schema, model, on_token_usage)
+
+    custom_llm = RejectingMockLLM()
+    fake_court = FakeCourtListenerClient()
+    pipeline = BriefingPipeline(llm_client=custom_llm, court_client=fake_court)
+
+    initial_brief = CaseBrief(
+        case_name="Brown v. Board of Education",
+        holding="Original holding",
+        reasoning="Original reasoning",
+        citation=["347 U.S. 483"],
+    )
+
+    request = RepairBriefRequest(
+        current_brief=initial_brief,
+        target_field="holding",
+        instruction="Cite Brown v. Board properly",
+    )
+
+    repaired_brief = await pipeline.repair(request)
+
+    assert custom_llm.draft_count == 2
+    assert "347 U.S. 483" in repaired_brief.holding
+    assert len(repaired_brief.revision_history) == 1
+    assert repaired_brief.revision_history[0].critique == "Must cite Brown v. Board of Education."
 
 
 def test_workflow_budget_step_limit() -> None:
