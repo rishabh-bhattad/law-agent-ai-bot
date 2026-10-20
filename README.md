@@ -14,7 +14,10 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
   5. **QA & Anti-Hallucination Review:** Audits the draft brief against raw court text, eliminates hallucinated facts, and verifies citations.
 - **Real-Time SSE Streaming:** Asynchronous Server-Sent Events (`POST /api/v1/generate/stream`) stream live pipeline execution states (`step_start`, `step_complete`) directly to the frontend as each stage runs.
 - **Legal Depth & Citation Hyperlinking:** Free Law Project's `eyecite` parses legal citations (e.g., *384 U.S. 436*), generating direct, clickable hyperlinks to official CourtListener opinion dockets in both the web interface and Markdown exports.
-- **Granular State Repair (Targeted Section Refinement):** Fast single-field regeneration endpoint (`POST /api/v1/brief/repair`) allows attorneys to refine specific brief sections (Holding or Reasoning) via natural-language instructions using the Fast tier (`gemini-3.5-flash-lite`) and micro-schema JSON outputs without re-running search or re-synthesizing the entire document.
+- **Actor-Critic Multi-Agent Repair Pipeline:** Specialized 3-stage section refinement workflow (`POST /api/v1/brief/repair`) utilizing a bounded multi-agent negotiation loop:
+  1. **Actor-Critic Negotiation Loop:** A Drafter Agent (`gemini-3.5-flash-lite`) produces an initial section patch; an adversarial Legal Auditor Agent (`gemini-3.5-flash`) evaluates the revision for constitutional fidelity and anti-hallucination. If rejected, the Drafter executes a Round 2 re-draft incorporating the critique, with a guaranteed single-audit termination ceiling.
+  2. **Citation Validation & URL Resolution:** Free Law Project's `eyecite` scans the repaired text for newly introduced precedent, resolving official 3-part CourtListener URLs without making redundant search queries.
+  3. **Audit Log & State Assembly:** Compiles timestamped before-and-after diffs with the auditor's critique into `CaseBrief.revision_history` and immutably merges the updated section into memory.
 - **Tiered Model Routing:** Dynamic per-step model dispatch balancing fast synthesis (Fast Tier: `gemini-3.5-flash-lite` for query optimization, brief drafting, and in-place repairs) against deep reasoning (Reasoning Tier: `gemini-3.5-flash` for raw opinion analysis and QA anti-hallucination audits) for optimal cost, latency, and legal rigor.
 - **Multi-Format Export:** Instant one-click Markdown (`.md`) export, clipboard copying, and print-ready styling for saving structured briefs directly as PDF via the browser.
 - **Resource Budgets & Runaway Termination:** Enforces hard execution ceilings on step counts (`max_steps=10`), wall-clock timeouts via `asyncio.timeout(120s)`, and cumulative token tracking across pipeline stages via decoupled observer callbacks to prevent runaway loops and cost blowouts.
@@ -45,13 +48,14 @@ law-agent-ai-bot/
 │   │   └── llm/                 # LLM provider protocol & Gemini SDK implementation
 │   ├── prompts/                 # Prompt templates and universal rules
 │   │   ├── rules/               # Global anti-hallucination markdown rules
-│   │   └── templates/           # Step templates (optimize, analyze, draft, qa, repair_field)
-│   ├── schemas/                 # Pydantic models (CaseBrief, LegalAnalysis, SearchPlan, RepairBriefRequest)
+│   │   └── templates/           # Step templates (optimize, analyze, draft, qa, repair_field, audit_repair)
+│   ├── schemas/                 # Pydantic models (CaseBrief, LegalAnalysis, SearchPlan, RepairBriefRequest, AuditRepairResult, RevisionEntry)
 │   ├── workflow/                # Domain-driven multi-stage workflow engine
-│   │   ├── context.py           # WorkflowContext shared memory container
-│   │   ├── runner.py            # Sequential step execution runner
-│   │   ├── briefing_steps.py    # The 5 workflow execution nodes
-│   │   ├── registry.py          # Workflow step recipe assembler
+│   │   ├── context.py           # WorkflowContext shared memory & budget container
+│   │   ├── runner.py            # Sequential step execution runner & timeout watchdog
+│   │   ├── briefing_steps.py    # The 5 briefing workflow execution nodes
+│   │   ├── repair_step.py       # Actor-critic repair, citation validator & audit log steps
+│   │   ├── registry.py          # Workflow step recipe assembler (briefing & repair)
 │   │   └── pipeline.py          # Master orchestrator & general contractor
 │   └── main.py                  # FastAPI entry point, CORS, and route registration
 ├── frontend/                    # React + TypeScript + Vite frontend
@@ -164,7 +168,7 @@ docker compose up --build
 ## 🧪 Testing & Evaluation
 
 ### 1. Run Unit Tests (Fast & Free)
-Runs the test suite using in-memory mock clients (`tests/mocks.py`) to verify the state machine, prompt-injection guardrails, SSE streaming, section repair, and budget limits without incurring API costs:
+Runs the test suite using in-memory mock clients (`tests/mocks.py`) to verify the state machine, prompt-injection guardrails, SSE streaming, actor-critic repair loops with rejection feedback, citation enrichment, and budget limits without incurring API costs:
 
 ```bash
 pytest tests/test_workflow.py -v
