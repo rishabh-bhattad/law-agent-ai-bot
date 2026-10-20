@@ -5,6 +5,9 @@ from app.schemas.brief import SingleFieldRepair, AuditRepairResult, RepairBriefR
 from app.core.config import get_settings
 from app.core.citations import extract_citations, build_courtlistner_url
 from datetime import datetime, timezone
+import logging
+
+logger = logging.getLogger("law_bot.workflow")
 
 class ActorCriticRepairStep(WorkflowStep):
     """Orchestrates the Drafter-Auditor negotiation loop with at most one audit."""
@@ -30,11 +33,18 @@ class ActorCriticRepairStep(WorkflowStep):
             critique_context=""
         )
 
-        proposed_draft = await self.llm.complete_with_json_schema(
+        proposed_draft: SingleFieldRepair = await self.llm.complete_with_json_schema(
             prompt=repair_prompt,
             schema=SingleFieldRepair,
             model=get_settings().LLM_MODEL_FAST,
             on_token_usage=context.budget.record_tokens
+        )
+        logger.info(
+            "\n%s\n[REPAIR STAGE 1/3 - DRAFTER PROPOSAL] Target Field: '%s'\nSchema: SingleFieldRepair\n%s\n%s",
+            "=" * 70,
+            field,
+            proposed_draft.model_dump_json(indent=2),
+            "=" * 70
         )
 
         audit_prompt = build_schema_prompt(
@@ -47,11 +57,19 @@ class ActorCriticRepairStep(WorkflowStep):
             proposed_draft=proposed_draft.repaired_text
         )
 
-        audit_result = await self.llm.complete_with_json_schema(
+        audit_result: AuditRepairResult = await self.llm.complete_with_json_schema(
             prompt=audit_prompt,
             schema=AuditRepairResult,
             model=get_settings().LLM_MODEL_REASONING,
             on_token_usage=context.budget.record_tokens
+        )
+
+        logger.info(
+            "\n%s\n[REPAIR STAGE 1/3 - AUDITOR REVIEW] Approved: %s\nSchema: AuditRepairResult\n%s\n%s",
+            "=" * 70,
+            audit_result.approved,
+            audit_result.model_dump_json(indent=2),
+            "=" * 70
         )
 
         if audit_result.approved:
@@ -67,11 +85,17 @@ class ActorCriticRepairStep(WorkflowStep):
                 current_value=current_text,
                 critique_context=f"\n\n### Auditor's Critique from Previous Draft (Must be corrected):\n{audit_result.critique}"
             )
-            final_draft = await self.llm.complete_with_json_schema(
+            final_draft: SingleFieldRepair = await self.llm.complete_with_json_schema(
                 prompt=repair_prompt,
                 schema=SingleFieldRepair,
                 model=get_settings().LLM_MODEL_FAST,
                 on_token_usage=context.budget.record_tokens
+            )
+            logger.info(
+                "\n%s\n[REPAIR STAGE 1/3 - DRAFTER REVISION] Revision after Critique\nSchema: SingleFieldRepair\n%s\n%s",
+                "=" * 70,
+                final_draft.model_dump_json(indent=2),
+                "=" * 70
             )
             context.scratch['repaired_text'] = final_draft.repaired_text
             context.scratch['critique'] = audit_result.critique
@@ -85,14 +109,21 @@ class ValidateRepairCitationStep(WorkflowStep):
         repaired_text = context.scratch['repaired_text']
         brief = context.request.current_brief
         new_citations = extract_citations(repaired_text)
+        resolved_items = []
         for citation in new_citations:
             if citation not in brief.citation:
                 brief.citation.append(citation)
                 url = build_courtlistner_url(citation=citation)
-                brief.citation_details.append(CitationItem(
-                    citation=citation,
-                    url=url
-                ))
+                item = CitationItem(citation=citation, url=url)
+                brief.citation_details.append(item)
+                resolved_items.append(item)
+        logger.info(
+            "\n%s\n[REPAIR STAGE 2/3 - CITATION VALIDATION]\nNew Citations Found: %s\nResolved Items: %s\n%s",
+            "=" * 70,
+            new_citations,
+            [item.model_dump() for item in resolved_items],
+            "=" * 70
+        )
 
 
 class AuditLogStep(WorkflowStep):
@@ -125,5 +156,12 @@ class AuditLogStep(WorkflowStep):
             }
         )
         context.scratch['_final_output'] = updated_brief
+        logger.info(
+            "\n%s\n[REPAIR STAGE 3/3 - AUDIT LOG & MERGE]\nSchema: RevisionEntry\n%s\n\nSchema: CaseBrief (Repaired Result)\n%s\n%s",
+            "=" * 70,
+            entry.model_dump_json(indent=2),
+            updated_brief.model_dump_json(indent=2, by_alias=True),
+            "=" * 70
+        )
 
         
