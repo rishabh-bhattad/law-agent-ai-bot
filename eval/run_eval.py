@@ -119,6 +119,9 @@ async def run_evaluation_suite() -> list[dict]:
                 "error": str(e)
             })
 
+        # Pause briefly between benchmark cases to respect CourtListener burst rate limits
+        await asyncio.sleep(2.0)
+
     valid_results = [r for r in results if r["success"]]
     if not valid_results:
         print("\n❌ All evaluation runs failed.")

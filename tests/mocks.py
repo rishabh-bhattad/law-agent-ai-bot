@@ -57,5 +57,21 @@ class FakeLLMProvider(LLMProvider):
 class FakeCourtListenerClient:
     """Mock CourtListener client returning simulated search results."""
 
-    async def search_opinions(self, query: str, court: str | None = None) -> list[str]:
-        return ["DummyOpinion"]
+    async def search_opinions(self, query: str, court: str | None = None) -> dict:
+        return {
+            "results": [
+                {
+                    "id": 107252,
+                    "caseName": "Miranda v. Arizona",
+                    "citation": ["384 U.S. 436"],
+                    "citeCount": 58748,
+                    "opinions": [{"id": 107252, "type": "combined-opinion"}],
+                }
+            ]
+        }
+
+    async def get_opinion(self, opinion_id: int | str) -> dict:
+        return {
+            "plain_text": "Delivered the opinion of the Court. The constitutional issue is custodial interrogation under the Fifth Amendment.",
+            "html_with_citations": "<p>Delivered the opinion of the Court. The constitutional issue is custodial interrogation under the Fifth Amendment.</p>",
+        }

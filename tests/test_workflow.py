@@ -180,3 +180,23 @@ def test_workflow_budget_token_limit() -> None:
         budget.record_tokens(300)
 
 
+@pytest.mark.asyncio
+async def test_search_courtlistener_authoritative_opinion_retrieval() -> None:
+    """Verifies that SearchCourtListenerStep pinpoints the primary merits case and fetches authoritative text."""
+    from app.workflow.briefing_steps import SearchCourtListenerStep
+    from app.workflow.context import WorkflowContext
+    from tests.mocks import FakeCourtListenerClient
+
+    fake_court = FakeCourtListenerClient()
+    step = SearchCourtListenerStep(client=fake_court)
+    context = WorkflowContext(request="Miranda v. Arizona")
+
+    await step.execute(context)
+
+    raw_cases = context.scratch.get("raw_cases", "")
+    assert "CASE NAME: Miranda v. Arizona" in raw_cases
+    assert "PRIMARY CITATIONS: 384 U.S. 436" in raw_cases
+    assert "AUTHORITATIVE OPINION TEXT:" in raw_cases
+    assert "Delivered the opinion of the Court" in raw_cases
+
+

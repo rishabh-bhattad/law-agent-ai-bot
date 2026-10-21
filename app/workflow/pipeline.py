@@ -28,15 +28,14 @@ class BriefingPipeline:
         await runner.run(context=context)
         return context.scratch['_final_output']
 
-    async def stream(self, query: str) -> AsyncGenerator[str, None]:
+    def stream(self, query: str) -> AsyncGenerator[str, None]:
         """Runs security checks and streams SSE events for each workflow step"""
         check_for_injection(query)
 
         briefing_steps = get_briefing_workflow(llm=self.llm, court=self.court)
         ctx = WorkflowContext(request=query)
         runner = WorkflowRunner(steps=briefing_steps)
-        async for event in runner.run_stream(context=ctx):
-            yield event
+        return runner.run_stream(context=ctx)
 
     async def repair(self, request: RepairBriefRequest) -> CaseBrief:
         """Refines a single field of an existing brief using the fast LLM tier."""

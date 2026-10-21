@@ -4,7 +4,11 @@ from app.integrations.llm import LLMProvider
 from app.prompts import build_schema_prompt
 from app.schemas.brief import LegalAnalysis, CaseBrief, SearchPlan
 from app.core.config import get_settings
-from app.core.citations import enrich_brief_citations
+from app.core.citations import (
+    enrich_brief_citations,
+    select_primary_opinion,
+    clean_opinion_text,
+)
 import logging
 
 logger = logging.getLogger("law_bot.workflow")
@@ -40,7 +44,7 @@ class OptimizeQueryStep(WorkflowStep):
 
 
 class SearchCourtListenerStep(WorkflowStep):
-    """Searches CourtListener for opinions matching the request."""
+    """Searches CourtListener for opinions matching the request and retrieves authoritative text for the primary case."""
     name = "Searching CourtListener Database."
 
     def __init__(self, client: CourtListenerClient) -> None:
@@ -53,14 +57,55 @@ class SearchCourtListenerStep(WorkflowStep):
 
         data = await self.client.search_opinions(query=query, court=court)
         cases = data.get("results", []) if isinstance(data, dict) else data
-        formatted_str = ""
-        for case in cases:
-            formatted_str += str(case) + "\n\n"
-        context.scratch['raw_cases'] = formatted_str
+
+        if not cases:
+            context.scratch['raw_cases'] = f"No case law opinions found matching query: {query}"
+            logger.info("\n%s\n[STAGE 2/5 OUTPUT] No opinions found for query: %s\n%s", "=" * 70, query, "=" * 70)
+            return
+
+        # Use 3-tier hybrid selection to pinpoint the authoritative merits opinion
+        primary_case, opinion_id = select_primary_opinion(cases)
+        opinion_text = ""
+
+        if opinion_id:
+            try:
+                op_data = await self.client.get_opinion(opinion_id)
+                raw_body = (
+                    op_data.get('html_with_citations')
+                    or op_data.get('plain_text')
+                    or op_data.get('html')
+                    or op_data.get('html_lawbox')
+                    or ""
+                )
+                opinion_text = clean_opinion_text(raw_body)
+            except Exception as e:
+                logger.warning("Could not fetch opinion %s directly (%s); falling back to search snippet.", opinion_id, e)
+
+        # Fallback to search snippet if full opinion fetch was empty or failed
+        if not opinion_text:
+            opinion_text = primary_case.get('snippet', '') or str(primary_case)
+
+        case_name = primary_case.get('caseName', 'Unknown Case')
+        citations = primary_case.get('citation', [])
+        court_name = primary_case.get('court', '')
+        date_filed = primary_case.get('dateFiled', '')
+
+        formatted_case_context = (
+            f"CASE NAME: {case_name}\n"
+            f"PRIMARY CITATIONS: {', '.join(citations) if isinstance(citations, list) else citations}\n"
+            f"COURT: {court_name}\n"
+            f"DATE FILED: {date_filed}\n\n"
+            f"AUTHORITATIVE OPINION TEXT:\n{opinion_text}"
+        )
+        context.scratch['raw_cases'] = formatted_case_context
         logger.info(
-            "\n%s\n[STAGE 2/5 OUTPUT] CourtListener Search -> Retrieved %d raw opinion(s)\n%s",
+            "\n%s\n[STAGE 2/5 OUTPUT] CourtListener Search -> Pinpointed Primary Case:\n"
+            "  Case: %s\n  Citations: %s\n  Opinion ID: %s\n  Opinion Text Extracted: %d characters\n%s",
             "=" * 70,
-            len(cases),
+            case_name,
+            citations,
+            opinion_id,
+            len(opinion_text),
             "=" * 70
         )
 
