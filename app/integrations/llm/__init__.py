@@ -21,12 +21,15 @@ class LLMProvider(Protocol):
 
 def llm_provider(settings: Settings) -> LLMProvider:
     """Factory returning the configured LLM provider instance."""
-    llm = settings.LLM_PROVIDER
+    llm = (settings.LLM_PROVIDER or "").lower()
     if llm == 'gemini':
         from app.integrations.llm.gemini import GeminiLLMProvider
         return GeminiLLMProvider()
+    elif llm == 'openai':
+        from app.integrations.llm.openai import OpenAILLMProvider
+        return OpenAILLMProvider()
     else:
-        raise ValueError("Unknown LLM provider")
+        raise ValueError(f"Unknown LLM provider: {settings.LLM_PROVIDER}")
 
 
 
