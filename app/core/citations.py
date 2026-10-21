@@ -3,19 +3,39 @@ import html
 from urllib.parse import quote
 from app.schemas.brief import CaseBrief, CitationItem
 
-# Standard legal citation regex
+# Case reporter pattern matching: Volume, Reporter (including 2d/3d/4th series, Supp, L. Ed. 2d, etc.), Page
+REPORTER_CITATION_PATTERN = re.compile(
+    r'\b(\d+)\s+([A-Za-z\.\s]+?(?:\d+[a-z]+|\d+d|\d+th)?)\s+(\d+)\b',
+    re.IGNORECASE
+)
+
+# Standard legal citation regex for fallback extraction
 CITATION_INDEX = re.compile(r'\b\d+\s+[A-Za-z\.\s]+\s+\d+\b')
 
 
-def build_courtlistner_url(citation: str) -> str:
-    """Build a direct CourtListner citation redirect url"""
+def build_courtlistner_url(citation: str) -> str | None:
+    """
+    Builds a direct CourtListener citation redirect URL for genuine judicial case reporters.
+    Returns None for non-case authorities (statutes, constitutional provisions, ordinances)
+    to avoid generating misleading generic search query URLs.
+    """
     citation = citation.strip()
-    if citation.startswith(('https', 'http')):
+    if citation.startswith(('https://', 'http://')):
         return citation
-    match = re.search(r'(\d+)\s+([A-Za-z0-9\.\s]+?)\s+(\d+)', citation)
+
+    # Normalize by removing parentheticals like "(1 Cranch)" or "(1966)"
+    normalized = re.sub(r'\([^)]*\)', '', citation).strip()
+    normalized = re.sub(r'\s+', ' ', normalized)
+
+    match = REPORTER_CITATION_PATTERN.search(normalized)
     if match:
-        return f"https://www.courtlistener.com/c/{quote(match.group(2).strip())}/{match.group(1)}/{match.group(3)}/"
-    return f"https://www.courtlistener.com/?q={quote(citation)}&type=o"
+        vol = match.group(1)
+        reporter = match.group(2).strip()
+        page = match.group(3)
+        return f"https://www.courtlistener.com/c/{quote(reporter)}/{vol}/{page}/"
+
+    # Non-case authorities (statutes, constitutions, ordinances) should not produce generic search queries
+    return None
 
 
 def extract_citations(text: str) -> list[str]:
@@ -34,9 +54,9 @@ def enrich_brief_citations(brief: CaseBrief) -> CaseBrief:
     details = []
     for item in brief.citation:
         extracted = extract_citations(item)
-        clean_ciation = extracted[0] if extracted else item
-        url = build_courtlistner_url(clean_ciation)
-        details.append(CitationItem(citation=clean_ciation, url=url))
+        clean_citation = extracted[0] if extracted else item
+        url = build_courtlistner_url(clean_citation)
+        details.append(CitationItem(citation=clean_citation, url=url))
     brief.citation_details = details
     return brief
 

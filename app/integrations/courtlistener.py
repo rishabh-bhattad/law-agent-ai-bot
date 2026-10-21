@@ -62,18 +62,3 @@ class CourtListenerClient:
             )
             response.raise_for_status()
             return response.json()
-
-    @retry(
-        wait=wait_exponential(multiplier=1, min=2, max=15),
-        stop=stop_after_attempt(4),
-        retry=retry_if_exception(is_retryable_courtlistener_error)
-    )
-    async def get_cluster(self, cluster_id: int | str) -> dict:
-        """Fetches the cluster record (containing syllabus/metadata) by cluster ID."""
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.get(
-                url=f"{self.url}/clusters/{cluster_id}/",
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
