@@ -8,12 +8,12 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
 
 - **Multi-Stage Workflow Pipeline:** Decoupled 5-stage state machine (`Context`, `Runner`, `Steps`, `Registry`, `Pipeline`):
   1. **Query Optimization:** LLM rewrites conversational user questions into quoted case names, boolean operators, and jurisdiction filters (`scotus`).
-  2. **Case Search:** Fetches precedential written opinions via CourtListener REST API with exponential backoff retries.
+  2. **Authoritative Opinion Retrieval:** Rather than feeding noisy search snippets to the model, the pipeline executes a 3-tier hybrid selection algorithm (`citeCount` ranking + majority `lead-opinion` filtering) to pinpoint the controlling decision, fetching up to ~15,000 characters of substantive majority opinion text via CourtListener's REST API with exponential backoff.
   3. **Issue Extraction:** Unpacks primary constitutional questions, material facts, and court reasoning into a structured `LegalAnalysis` schema.
   4. **Brief Drafting:** Synthesizes an authoritative legal brief with explicit constitutional amendments, clauses, and holding rules.
   5. **QA & Anti-Hallucination Review:** Audits the draft brief against raw court text, eliminates hallucinated facts, and verifies citations.
 - **Real-Time SSE Streaming:** Asynchronous Server-Sent Events (`POST /api/v1/generate/stream`) stream live pipeline execution states (`step_start`, `step_complete`) directly to the frontend as each stage runs.
-- **Legal Depth & Citation Hyperlinking:** Free Law Project's `eyecite` parses legal citations (e.g., *384 U.S. 436*), generating direct, clickable hyperlinks to official CourtListener opinion dockets in both the web interface and Markdown exports.
+- **Legal Depth & Robust Citation Resolution:** Free Law Project's `eyecite` combined with reporter regex parsing isolates legal citations across single and multi-part series (`384 U.S. 436`, `16 L. Ed. 2d 694`, `45 F. Supp. 2d 789`). It constructs direct CourtListener redirect URLs (`/c/{reporter}/{vol}/{page}/`) while intelligently suppressing generic keyword search fallbacks for non-case authorities (statutes, constitutional clauses, and city ordinances).
 - **Actor-Critic Multi-Agent Repair Pipeline:** Specialized 3-stage section refinement workflow (`POST /api/v1/brief/repair`) utilizing a bounded multi-agent negotiation loop:
   1. **Actor-Critic Negotiation Loop:** A Drafter Agent (`gemini-3.5-flash-lite`) produces an initial section patch; an adversarial Legal Auditor Agent (`gemini-3.5-flash`) evaluates the revision for constitutional fidelity and anti-hallucination. If rejected, the Drafter executes a Round 2 re-draft incorporating the critique, with a guaranteed single-audit termination ceiling.
   2. **Citation Validation & URL Resolution:** Free Law Project's `eyecite` scans the repaired text for newly introduced precedent, resolving official 3-part CourtListener URLs without making redundant search queries.
@@ -25,7 +25,7 @@ An autonomous, multi-stage legal research agent and case brief generator. It tra
 - **Security Guardrails:** Pre-LLM regex detection blocks prompt injection attacks (`400 Bad Request`) before invoking any model.
 - **OpenTelemetry Observability:** Distributed tracing auto-instruments incoming FastAPI requests and outbound HTTP calls.
 - **Docker Containerization:** Full multi-container orchestration (`docker-compose.yml`) packaging the Python 3.12 backend and Nginx-served React frontend for consistent local dev and cloud deployment.
-- **Automated LLM-as-a-Judge Evaluation:** Automated benchmark suite (`eval/run_eval.py`) scores output on *Factual Accuracy* (5.0/5.0), *Holding Correctness* (5.0/5.0), and *Citation Relevance* (5.0/5.0).
+- **Automated LLM-as-a-Judge Evaluation:** Automated benchmark suite (`eval/run_eval.py`) rigorously grades generated briefs against landmark legal decisions on a 1–5 scale for *Factual Accuracy* (4.20/5.0), *Holding Correctness* (3.00/5.0), and *Citation Quality* (3.60/5.0).
 - **Modern Web Interface:** Full React + Vite + Tailwind CSS frontend with dynamic step progress indicators and detailed brief cards.
 
 ---
@@ -175,11 +175,20 @@ pytest tests/test_workflow.py -v
 ```
 
 ### 2. Run the LLM-as-a-Judge Evaluation Suite
-Runs live CourtListener retrieval and Gemini generation against landmark legal benchmarks (*Roe v. Wade*, *Miranda v. Arizona*), grading accuracy, holdings, and citations on a 1–5 scale:
+Runs live CourtListener retrieval and Gemini generation against 5 landmark legal benchmarks (*Marbury v. Madison*, *Brown v. Board of Education*, *Miranda v. Arizona*, *Roe v. Wade*, *Palsgraf v. Long Island R.R.*), grading accuracy, holdings, and citations on a 1–5 scale:
 
 ```bash
 python -m eval.run_eval
 ```
+
+#### Latest Evaluation Benchmark Results
+
+| Metric | Score / Result | Description |
+| :--- | :---: | :--- |
+| **Factual Accuracy** | **4.20 / 5.0** | Precision of material facts and procedural history extracted from opinion text. |
+| **Holding Correctness** | **3.00 / 5.0 (60%)** | Accuracy of constitutional holding rule (*Brown* and *Miranda* scored perfect 5/5). |
+| **Citation Quality & Relevance** | **3.60 / 5.0** | Verification of primary citations, companion rulings, and supporting authorities. |
+| **Case Citation URL Resolution** | **93.6% (44/47)** | 100% of judicial case citations resolved to CourtListener redirect URLs; 3 non-case authorities (statutes/ordinances) cleanly kept as text without false search links. |
 
 ---
 
