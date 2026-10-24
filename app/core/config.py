@@ -18,11 +18,14 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = "" # No integration yet
     OPENAI_API_KEY: str = ""
     COURTLISTENER_API_KEY: str = ""
+    REVENIUM_API_KEY: str = ""
+    REVENIUM_KEY: str = ""
     
-    # CourtListener API Base URL
+    # External API Base URLs
     COURTLISTENER_BASE_URL: str = "https://www.courtlistener.com/api/rest/v4"
+    REVENIUM_BASE_URL: str = "https://api.revenium.ai/meter/v2/ai/completions"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @model_validator(mode="after")
     def set_dynamic_models(self) -> "Settings":
